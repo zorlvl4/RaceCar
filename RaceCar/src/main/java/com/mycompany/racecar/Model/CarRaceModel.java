@@ -52,6 +52,12 @@ public class CarRaceModel {
         }
     }
     
-    
-    
+    public void resetRace() {
+        finishOrder.clear();
+        winner = null;
+
+        for (RaceCar car : cars) {
+            car.setPosition(0, 0);
+        }
+    }
 }
