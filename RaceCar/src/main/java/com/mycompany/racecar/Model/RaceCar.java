@@ -28,5 +28,40 @@ public class RaceCar {
         this.speed = speed;
     }
     
-    
+    public String getType() {
+        return type;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public String getColorName() {
+        return colorName;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
+    public void setPosition(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
 }
