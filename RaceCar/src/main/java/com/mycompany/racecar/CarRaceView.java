@@ -4,6 +4,7 @@
  */
 package com.mycompany.racecar;
 
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
@@ -37,6 +38,20 @@ public class CarRaceView {
     private Label speedValueLabel;
     
     private void createView() {
+        root = new BorderPane();
+        root.setPrefSize(1120, 760);
+        root.getStyleClass().add("root-pane");
         
+        VBox header = new VBox(5);
+        header.setPadding(new Insets(20, 28, 16, 28));
+        header.getStyleClass().add("header");
+        
+        Label title = new Label("GRAND PRIX");
+        Label subtitle = new Label("JavaFX Car Race Simulation");
+        
+        subtitle.getStyleClass().add("sub-title");
+        header.getChildren().addAll(title, subtitle);
+        title.getStyleClass().add("main-title");
+        root.setTop(header);
     }
 }
