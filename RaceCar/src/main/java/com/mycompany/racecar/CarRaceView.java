@@ -187,5 +187,67 @@ public class CarRaceView {
         root.setBottom(footer);
     }
     
-    
+     public BorderPane getRoot() {
+        return root;
+    }
+
+    public VBox getSlideshowPane() {
+        return slideshowPane;
+    }
+
+    public VBox getRacePane() {
+        return racePane;
+    }
+
+    public StackPane getSlideCarHolder() {
+        return slideCarHolder;
+    }
+
+    public Label getSlideGreetingLabel() {
+        return slideGreetingLabel;
+    }
+
+    public Label getSlideNameLabel() {
+        return slideNameLabel;
+    }
+
+    public Label getSlideCounterLabel() {
+        return slideCounterLabel;
+    }
+
+    public ProgressBar getSlideProgressBar() {
+        return slideProgressBar;
+    }
+
+    public Pane getTrackPane() {
+        return trackPane;
+    }
+
+    public Label getRaceStatusLabel() {
+        return raceStatusLabel;
+    }
+
+    public TextArea getResultsArea() {
+        return resultsArea;
+    }
+
+    public Button getStartButton() {
+        return startButton;
+    }
+
+    public Button getPauseButton() {
+        return pauseButton;
+    }
+
+    public Button getResetButton() {
+        return resetButton;
+    }
+
+    public Slider getSpeedSlider() {
+        return speedSlider;
+    }
+
+    public Label getSpeedValueLabel() {
+        return speedValueLabel;
+    }
 }
