@@ -14,6 +14,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
@@ -162,6 +163,29 @@ public class CarRaceView {
                 speedRow
         );
         
+        // RESULTS PANEL
+        VBox resultsPanel = new VBox(10);
+        resultsPanel.getStyleClass().add("results-card");
+
+        Label resultsTitle = new Label("RACE RESULTS");
+        resultsTitle.getStyleClass().add("section-title");
+
+        resultsArea = new TextArea("Welcome! The race will begin after the slideshow.");
+        resultsArea.setEditable(false);
+        resultsArea.setWrapText(true);
+        resultsArea.setPrefRowCount(6);
+        resultsArea.setPrefHeight(130);
+
+        resultsPanel.getChildren().addAll(resultsTitle, resultsArea);
+        HBox.setHgrow(resultsPanel, Priority.ALWAYS);
         
+        // FOOTER
+        HBox footer = new HBox(20, controlPanel, resultsPanel);
+        
+        footer.setPadding(new Insets(18, 25, 20, 25));
+        footer.getStyleClass().add("footer");
+        root.setBottom(footer);
     }
+    
+    
 }
