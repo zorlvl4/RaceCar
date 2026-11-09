@@ -12,6 +12,7 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -87,6 +88,30 @@ public class CarRaceView {
                 slideCounterLabel
         );
         
-        
+         // RACE TRACK
+        racePane = new VBox(14);
+        racePane.setAlignment(Pos.CENTER);
+        racePane.setPadding(new Insets(10));
+        racePane.getStyleClass().add("race-panel");
+
+        Label trackTitle = new Label("THE RACE TRACK");
+        trackTitle.getStyleClass().add("section-title");
+
+        raceStatusLabel = new Label("Ready to race");
+        raceStatusLabel.getStyleClass().add("status-label");
+
+        HBox trackHeading = new HBox(20, trackTitle, raceStatusLabel);
+        trackHeading.setAlignment(Pos.CENTER_LEFT);
+
+        trackPane = new Pane();
+        trackPane.setPrefSize(1000, 380);
+        trackPane.setMinSize(1000, 380);
+        trackPane.getStyleClass().add("track-pane");
+
+        racePane.getChildren().addAll(trackHeading, trackPane);
+        racePane.setVisible(false);
+        racePane.setManaged(false);
     }
+    
+    
 }
