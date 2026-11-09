@@ -111,7 +111,57 @@ public class CarRaceView {
         racePane.getChildren().addAll(trackHeading, trackPane);
         racePane.setVisible(false);
         racePane.setManaged(false);
+    
+    
+    // CENTER
+        StackPane center = new StackPane(slideshowPane, racePane);
+        center.setPadding(new Insets(20));
+        root.setCenter(center);
+
+        // CONTROL BUTTONS
+        VBox controlPanel = new VBox(12);
+        controlPanel.setPrefWidth(420);
+        controlPanel.getStyleClass().add("control-card");
+
+        Label controlTitle = new Label("RACE CONTROLS");
+        controlTitle.getStyleClass().add("section-title");
+
+        startButton = new Button("Start");
+        startButton.getStyleClass().add("primary-button");
+
+        pauseButton = new Button("Pause");
+        pauseButton.getStyleClass().add("secondary-button");
+
+        resetButton = new Button("Reset");
+        resetButton.getStyleClass().add("danger-button");
+
+        startButton.setDisable(true);
+        pauseButton.setDisable(true);
+        resetButton.setDisable(true);
+
+        HBox buttons = new HBox(10, startButton, pauseButton, resetButton);
+
+        Label speedLabel = new Label("Simulation Speed");
+        speedLabel.getStyleClass().add("normal-label");
+
+        speedSlider = new Slider(0.5, 2.0, 1.0);
+        speedSlider.setMajorTickUnit(0.5);
+        speedSlider.setShowTickMarks(true);
+        speedSlider.setShowTickLabels(true);
+        speedSlider.setPrefWidth(280);
+
+        speedValueLabel = new Label("1.0x");
+
+        HBox speedRow = new HBox(12, speedSlider, speedValueLabel);
+        speedRow.setAlignment(Pos.CENTER);
+
+        controlPanel.getChildren().addAll(
+                controlTitle,
+                buttons,
+                speedLabel,
+                speedRow
+        );
+        
+        
     }
-    
-    
 }
