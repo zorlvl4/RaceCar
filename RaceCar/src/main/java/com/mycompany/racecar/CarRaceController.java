@@ -14,6 +14,7 @@ import javafx.animation.PauseTransition;
 import javafx.animation.RotateTransition;
 import javafx.animation.TranslateTransition;
 import javafx.scene.Group;
+import javafx.util.Duration;
 
 /**
  *
@@ -41,6 +42,17 @@ public class CarRaceController {
     private static final double START_LINE_X = 265;
     private static final double FINISH_LINE_X = 900;
     private static final double CAR_WIDTH = 115;
+    
+        public CarRaceController(CarRaceModel model, CarRaceView view) {
+        this.model = model;
+        this.view = view;
+        initialize();
+    }
+
+    private void initialize() {
+        slideshowTimer = new PauseTransition(Duration.seconds(2.5));
+
+    }
     
     
 }
