@@ -6,6 +6,8 @@ package com.mycompany.racecar;
 
 import com.mycompany.racecar.Model.RaceCar;
 import com.mycompany.racecar.Model.CarRaceModel;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -133,6 +135,14 @@ public class CarRaceController {
         view.getResetButton().setDisable(false);
     }
 
+    
+    
+    
+    
+    
+    
+    
+    
     private CarVisual createCarVisual(RaceCar car) {
         Group carGroup = new Group();
 
@@ -221,8 +231,94 @@ public class CarRaceController {
         return new Group(outer, spoke, center);
     }
 
+        // BUILD RACE TRACK
 
+    private void buildTrack() {
+        javafx.scene.layout.Pane track = view.getTrackPane();
+        track.getChildren().clear();
+        carGroups.clear();
+        transitions.clear();
+        wheelAnimations.clear();
 
+        Rectangle background = new Rectangle(TRACK_WIDTH, TRACK_HEIGHT);
+        background.setFill(Color.web("#29313B"));
+        track.getChildren().add(background);
+
+        // Track borders
+        Line topLine = new Line(20, 27, 980, 27);
+        Line bottomLine = new Line(20, 355, 980, 355);
+
+        topLine.setStroke(Color.WHITE);
+        bottomLine.setStroke(Color.WHITE);
+
+        topLine.setStrokeWidth(3);
+        bottomLine.setStrokeWidth(3);
+        track.getChildren().addAll(topLine, bottomLine);
+
+        // Lane divisions
+        for (int i = 1; i <= 3; i++) {
+            Line lane = new Line(20, 112 + (i - 1) * 85, 980, 112 + (i - 1) * 85);
+            lane.setStroke(Color.WHITE);
+            lane.setStrokeWidth(2);
+
+            lane.getStrokeDashArray().addAll(15.0, 15.0);
+            track.getChildren().add(lane);
+        }
+
+        // Starting line
+        Line startLine = new Line(START_LINE_X, 30, START_LINE_X, 350);
+
+        startLine.setStroke(Color.YELLOW);
+        startLine.setStrokeWidth(4);
+        track.getChildren().add(startLine);
+
+        // Finish line
+        for (int row = 0; row < 32; row++) {
+            for (int column = 0; column < 2; column++) {
+                Rectangle square = new Rectangle(FINISH_LINE_X + column * 8, 30 + row * 10, 8, 10);
+                if ((row + column) % 2 == 0) {
+                    square.setFill(Color.WHITE);
+                } else {
+                    square.setFill(Color.BLACK);
+                }
+                track.getChildren().add(square);
+            }
+        }
+
+        // Labels
+        Text startText = new Text(START_LINE_X - 25, 20, "START");
+        startText.setFill(Color.YELLOW);
+
+        Text finishText = new Text(FINISH_LINE_X - 25, 20, "FINISH");
+        finishText.setFill(Color.WHITE);
+
+        startText.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        finishText.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+
+        track.getChildren().addAll(startText, finishText);
+
+        // Add cars
+        for (int i = 0; i < model.getCars().size(); i++) {
+            RaceCar car = model.getCars().get(i);
+            double laneY = 35 + i * 85;
+
+            car.setPosition(START_CAR_X, laneY);
+            CarVisual visual = createCarVisual(car);
+
+            visual.group.setLayoutX(START_CAR_X);
+            visual.group.setLayoutY(laneY);
+
+            visual.group.translateXProperty().addListener(
+                    (observable, oldValue, newValue) ->
+                            car.setPosition(
+                                    START_CAR_X + newValue.doubleValue(),
+                                    car.getY()));
+            carGroups.put(car, visual.group);
+            wheelAnimations.addAll(visual.animations);
+            track.getChildren().add(visual.group);
+        }
+    }    
+        
     private static class CarVisual {
         private Group group;
         private List<RotateTransition> animations;
@@ -231,5 +327,5 @@ public class CarRaceController {
             this.animations = animations;
     }
         
-    }
-}    
+    }   
+}
