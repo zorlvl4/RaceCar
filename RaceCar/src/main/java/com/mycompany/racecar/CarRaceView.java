@@ -114,7 +114,7 @@ public class CarRaceView {
         racePane.setManaged(false);
     
     
-    // CENTER
+        // CENTER
         StackPane center = new StackPane(slideshowPane, racePane);
         center.setPadding(new Insets(20));
         root.setCenter(center);
@@ -249,5 +249,9 @@ public class CarRaceView {
 
     public Label getSpeedValueLabel() {
         return speedValueLabel;
+    }
+    
+    public CarRaceView() {
+        createView();
     }
 }
