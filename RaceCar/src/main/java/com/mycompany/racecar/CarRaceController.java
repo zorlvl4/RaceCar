@@ -1,23 +1,28 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.racecar;
 
 import com.mycompany.racecar.Model.RaceCar;
 import com.mycompany.racecar.Model.CarRaceModel;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.PauseTransition;
 import javafx.animation.RotateTransition;
 import javafx.animation.TranslateTransition;
 import javafx.scene.Group;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
@@ -36,25 +41,25 @@ public class CarRaceController {
     private CarRaceModel model;
     private CarRaceView view;
     private PauseTransition slideshowTimer;
+    private Clip slideshowSound;
+
     private int slideshowIndex = 0;
     private boolean slideshowFinished = false;
-    
     private boolean raceStarted = false;
     private boolean racePaused = false;
     private boolean raceFinished = false;
-    
+
     private final Map<RaceCar, Group> carGroups = new LinkedHashMap<>();
     private final Map<RaceCar, TranslateTransition> transitions = new LinkedHashMap<>();
     private final List<RotateTransition> wheelAnimations = new ArrayList<>();
-    
+
     private static final double TRACK_WIDTH = 1000;
     private static final double TRACK_HEIGHT = 380;
-    
     private static final double START_CAR_X = 150;
     private static final double START_LINE_X = 265;
     private static final double FINISH_LINE_X = 900;
     private static final double CAR_WIDTH = 115;
-    
+
     public CarRaceController(CarRaceModel model, CarRaceView view) {
         this.model = model;
         this.view = view;
@@ -64,18 +69,24 @@ public class CarRaceController {
     private void initialize() {
         slideshowTimer = new PauseTransition(Duration.seconds(2.5));
         slideshowTimer.setOnFinished(event -> nextSlide());
-      //  view.getStartButton().setOnAction(event -> startRace());
-        //view.getPauseButton().setOnAction(event -> pauseRace());
-        //view.getResetButton().setOnAction(event -> resetRace());
-    }
-    
-    public void startSlideshow() {
-        slideshowIndex = 0;
-        showSlide();
-        slideshowTimer.playFromStart();
+
+        view.getStartButton().setOnAction(event -> startRace());
+        view.getPauseButton().setOnAction(event -> pauseRace());
+        view.getResetButton().setOnAction(event -> resetRace());
+
+        view.getSpeedSlider().valueProperty().addListener(
+                (observable, oldValue, newValue) -> updateSpeed(newValue.doubleValue()));
+
+        updateSpeed(view.getSpeedSlider().getValue());
     }
 
     // SLIDESHOW
+    public void startSlideshow() {
+        slideshowIndex = 0;
+        showSlide();
+        playSlideshowSound();
+        slideshowTimer.playFromStart();
+    }
 
     private void showSlide() {
         RaceCar car = model.getCars().get(slideshowIndex);
@@ -85,21 +96,15 @@ public class CarRaceController {
         visual.group.setScaleY(2.7);
 
         view.getSlideCarHolder().getChildren().setAll(visual.group);
-
         view.getSlideGreetingLabel().setText("Welcome to the Grand Prix!");
-
         view.getSlideNameLabel().setText(
-                car.getType()
-                + "  |  #" + car.getNumber()
-                + "  |  " + car.getColorName());
+                car.getType() + "  |  #" + car.getNumber() + "  |  " + car.getColorName());
 
         view.getSlideCounterLabel().setText(
-                "Car " + (slideshowIndex + 1)
-                + " of " + model.getCars().size());
+                "Car " + (slideshowIndex + 1) + " of " + model.getCars().size());
 
         view.getSlideProgressBar().setProgress(
-                (slideshowIndex + 1.0)
-                / model.getCars().size());
+                (slideshowIndex + 1.0) / model.getCars().size());
     }
 
     private void nextSlide() {
@@ -107,7 +112,6 @@ public class CarRaceController {
             slideshowIndex++;
             showSlide();
             slideshowTimer.playFromStart();
-
         } else {
             finishSlideshow();
         }
@@ -116,12 +120,14 @@ public class CarRaceController {
     private void finishSlideshow() {
         slideshowFinished = true;
         slideshowTimer.stop();
+        stopSlideshowSound();
 
         view.getSlideshowPane().setVisible(false);
         view.getSlideshowPane().setManaged(false);
 
         view.getRacePane().setManaged(true);
         view.getRacePane().setVisible(true);
+        buildTrack();
 
         view.getResultsArea().setText(
                 "The slideshow is complete.\n"
@@ -129,20 +135,72 @@ public class CarRaceController {
                 + "Press START to begin the race.");
 
         view.getRaceStatusLabel().setText("Ready to race");
-
         view.getStartButton().setDisable(false);
         view.getPauseButton().setDisable(true);
         view.getResetButton().setDisable(false);
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
+    // SOUND
+    private void playSlideshowSound() {
+        try {
+            File soundFile = createSoundFile();
+
+            try (AudioInputStream stream = AudioSystem.getAudioInputStream(soundFile)) {
+                slideshowSound = AudioSystem.getClip();
+                slideshowSound.open(stream);
+            }
+
+            slideshowSound.loop(5);
+        } catch (Exception e) {
+            System.out.println("Sound error: " + e.getMessage());
+        }
+    }
+
+    private File createSoundFile() throws Exception {
+        int sampleRate = 22050;
+        int duration = 2;
+        int sampleCount = sampleRate * duration;
+
+        byte[] audioData = new byte[sampleCount * 2];
+
+        for (int i = 0; i < sampleCount; i++) {
+            double time = (double) i / sampleRate;
+            double frequency = 65 + 30 * time / duration;
+
+            double sound = Math.sin(2 * Math.PI * frequency * time)
+                    + 0.3 * Math.sin(4 * Math.PI * frequency * time);
+
+            double envelope = Math.min(1, time * 5)
+                    * Math.min(1, (duration - time) * 5);
+
+            short sample = (short) (sound * envelope * 3000);
+
+            audioData[i * 2] = (byte) (sample & 0xff);
+            audioData[i * 2 + 1] = (byte) ((sample >> 8) & 0xff);
+        }
+
+        AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, false);
+        File soundFile = File.createTempFile("grand-prix-", ".wav");
+        soundFile.deleteOnExit();
+
+        try (AudioInputStream stream = new AudioInputStream(
+                new ByteArrayInputStream(audioData), format, sampleCount)) {
+
+            AudioSystem.write(stream, AudioFileFormat.Type.WAVE, soundFile);
+        }
+
+        return soundFile;
+    }
+
+    private void stopSlideshowSound() {
+        if (slideshowSound != null) {
+            slideshowSound.stop();
+            slideshowSound.close();
+            slideshowSound = null;
+        }
+    }
+
+    // CAR DRAWING
     private CarVisual createCarVisual(RaceCar car) {
         Group carGroup = new Group();
 
@@ -185,9 +243,7 @@ public class CarRaceController {
         windowTwo.setFill(Color.LIGHTBLUE);
         windowTwo.setStroke(Color.BLACK);
 
-        Text number = new Text(
-                48, 35, String.valueOf(car.getNumber()));
-
+        Text number = new Text(48, 35, String.valueOf(car.getNumber()));
         number.setFill(Color.WHITE);
         number.setFont(Font.font("Arial", FontWeight.BOLD, 12));
 
@@ -198,22 +254,17 @@ public class CarRaceController {
                 number
         );
 
-        RotateTransition spinOne =
-                new RotateTransition(Duration.millis(420), wheelOne);
-
+        RotateTransition spinOne = new RotateTransition(Duration.millis(420), wheelOne);
         spinOne.setByAngle(360);
         spinOne.setInterpolator(Interpolator.LINEAR);
         spinOne.setCycleCount(Animation.INDEFINITE);
 
-        RotateTransition spinTwo =
-                new RotateTransition(Duration.millis(420), wheelTwo);
-
+        RotateTransition spinTwo = new RotateTransition(Duration.millis(420), wheelTwo);
         spinTwo.setByAngle(360);
         spinTwo.setInterpolator(Interpolator.LINEAR);
         spinTwo.setCycleCount(Animation.INDEFINITE);
 
         List<RotateTransition> animations = new ArrayList<>();
-
         animations.add(spinOne);
         animations.add(spinTwo);
 
@@ -231,10 +282,10 @@ public class CarRaceController {
         return new Group(outer, spoke, center);
     }
 
-        // BUILD RACE TRACK
-
+    // BUILD RACE TRACK
     private void buildTrack() {
-        javafx.scene.layout.Pane track = view.getTrackPane();
+        Pane track = view.getTrackPane();
+
         track.getChildren().clear();
         carGroups.clear();
         transitions.clear();
@@ -250,37 +301,43 @@ public class CarRaceController {
 
         topLine.setStroke(Color.WHITE);
         bottomLine.setStroke(Color.WHITE);
-
         topLine.setStrokeWidth(3);
         bottomLine.setStrokeWidth(3);
+
         track.getChildren().addAll(topLine, bottomLine);
 
         // Lane divisions
         for (int i = 1; i <= 3; i++) {
-            Line lane = new Line(20, 112 + (i - 1) * 85, 980, 112 + (i - 1) * 85);
+            Line lane = new Line(20, 112 + (i - 1) * 85,
+                    980, 112 + (i - 1) * 85);
+
             lane.setStroke(Color.WHITE);
             lane.setStrokeWidth(2);
-
             lane.getStrokeDashArray().addAll(15.0, 15.0);
+
             track.getChildren().add(lane);
         }
 
         // Starting line
         Line startLine = new Line(START_LINE_X, 30, START_LINE_X, 350);
-
         startLine.setStroke(Color.YELLOW);
         startLine.setStrokeWidth(4);
+
         track.getChildren().add(startLine);
 
         // Finish line
         for (int row = 0; row < 32; row++) {
             for (int column = 0; column < 2; column++) {
-                Rectangle square = new Rectangle(FINISH_LINE_X + column * 8, 30 + row * 10, 8, 10);
+                Rectangle square = new Rectangle(
+                        FINISH_LINE_X + column * 8,
+                        30 + row * 10, 8, 10);
+
                 if ((row + column) % 2 == 0) {
                     square.setFill(Color.WHITE);
                 } else {
                     square.setFill(Color.BLACK);
                 }
+
                 track.getChildren().add(square);
             }
         }
@@ -312,30 +369,29 @@ public class CarRaceController {
                     (observable, oldValue, newValue) ->
                             car.setPosition(
                                     START_CAR_X + newValue.doubleValue(),
-                                    car.getY()));
+                                    laneY));
+
             carGroups.put(car, visual.group);
             wheelAnimations.addAll(visual.animations);
             track.getChildren().add(visual.group);
-            buildTrack();
         }
     }
-        
-        // START RACE
 
+    // START RACE
     private void startRace() {
         if (!slideshowFinished || raceFinished) {
             return;
         }
+
         if (!raceStarted) {
             prepareTransitions();
             raceStarted = true;
         }
 
-        for (Map.Entry<RaceCar, TranslateTransition> entry
-                : transitions.entrySet()) {
+        for (Map.Entry<RaceCar, TranslateTransition> entry : transitions.entrySet()) {
             RaceCar car = entry.getKey();
-            TranslateTransition transition =
-                    entry.getValue();
+            TranslateTransition transition = entry.getValue();
+
             if (!model.getFinishOrder().contains(car)) {
                 if (racePaused) {
                     transition.play();
@@ -348,83 +404,56 @@ public class CarRaceController {
         for (RotateTransition wheel : wheelAnimations) {
             wheel.play();
         }
+
         racePaused = false;
 
         view.getStartButton().setDisable(true);
         view.getStartButton().setText("Start");
         view.getPauseButton().setDisable(false);
-        view.getRaceStatusLabel().setText(
-                "Race in progress!");
+        view.getRaceStatusLabel().setText("Race in progress!");
     }
 
     private void prepareTransitions() {
-        double distance =
-                FINISH_LINE_X - START_CAR_X
-                - CAR_WIDTH + 2;
+        double distance = FINISH_LINE_X - START_CAR_X - CAR_WIDTH + 2;
+
         for (RaceCar car : model.getCars()) {
             Group group = carGroups.get(car);
-            TranslateTransition transition =
-                    new TranslateTransition(
-                            Duration.seconds(
-                                    distance / car.getSpeed()),
-                            group);
+
+            TranslateTransition transition = new TranslateTransition(
+                    Duration.seconds(distance / car.getSpeed()), group);
 
             transition.setToX(distance);
-
-            transition.setInterpolator(
-                    Interpolator.LINEAR);
-
-            transition.setRate(
-                    view.getSpeedSlider().getValue());
-
-            transition.setOnFinished(event ->
-                    carFinished(car));
+            transition.setInterpolator(Interpolator.LINEAR);
+            transition.setRate(view.getSpeedSlider().getValue());
+            transition.setOnFinished(event -> carFinished(car));
 
             transitions.put(car, transition);
         }
-    }   
-    
-    private void carFinished(RaceCar car) {
-        model.recordFinish(car);
-        updateResults();
-        view.getRaceStatusLabel().setText(
-                "Car #" + car.getNumber()
-                + " finished in position "
-                + model.getFinishOrder().size());
-        if (model.getFinishOrder().size()
-                == model.getCars().size()) {
-            finishRace();
-    }
-        
-    private void updateResults() {
-
-    StringBuilder result = new StringBuilder();
-
-    result.append("RACE PROGRESS\n\n");
-
-    result.append("Cars finished: ")
-            .append(model.getFinishOrder().size())
-            .append(" / ")
-            .append(model.getCars().size())
-            .append("\n\n");
-
-    result.append("Finishing order:\n");
-
-    for (int i = 0; i < model.getFinishOrder().size(); i++) {
-
-        RaceCar car = model.getFinishOrder().get(i);
-
-        result.append(i + 1)
-                .append(". Car #")
-                .append(car.getNumber())
-                .append(" - ")
-                .append(car.getColorName())
-                .append("\n");
     }
 
-    view.getResultsArea().setText(result.toString());
+    // PAUSE RACE
+    private void pauseRace() {
+        if (!raceStarted || raceFinished || racePaused) {
+            return;
+        }
+
+        racePaused = true;
+
+        for (TranslateTransition transition : transitions.values()) {
+            transition.pause();
+        }
+
+        for (RotateTransition wheel : wheelAnimations) {
+            wheel.pause();
+        }
+
+        view.getStartButton().setDisable(false);
+        view.getStartButton().setText("Resume");
+        view.getPauseButton().setDisable(true);
+        view.getRaceStatusLabel().setText("Race paused");
     }
 
+    // RESET RACE
     private void resetRace() {
         for (TranslateTransition transition : transitions.values()) {
             transition.stop();
@@ -444,44 +473,106 @@ public class CarRaceController {
 
         view.getStartButton().setDisable(false);
         view.getStartButton().setText("Start");
-
         view.getPauseButton().setDisable(true);
         view.getResetButton().setDisable(false);
-
         view.getRaceStatusLabel().setText("Ready to race");
 
         view.getResultsArea().setText(
                 "The race has been reset.\n"
                 + "All cars are back at the starting line.");
     }
-    
-    private void pauseRace() {
-            if (!raceStarted || raceFinished || racePaused) {
-                return;
-            }
 
-            racePaused = true;
+    // WINNER AND RESULTS
+    private void carFinished(RaceCar car) {
+        model.recordFinish(car);
+        updateResults();
 
-            for (TranslateTransition transition : transitions.values()) {
-                transition.pause();
-            }
+        view.getRaceStatusLabel().setText(
+                "Car #" + car.getNumber()
+                + " finished in position " + model.getFinishOrder().size());
 
-            for (RotateTransition wheel : wheelAnimations) {
-                wheel.pause();
-            }
+        if (model.getFinishOrder().size() == model.getCars().size()) {
+            finishRace();
+        }
+    }
 
-            view.getStartButton().setDisable(false);
-            view.getStartButton().setText("Resume");
+    private void updateResults() {
+        StringBuilder result = new StringBuilder();
 
-            view.getPauseButton().setDisable(true);
+        result.append("RACE PROGRESS\n\n");
+        result.append("Cars finished: ")
+                .append(model.getFinishOrder().size())
+                .append(" / ")
+                .append(model.getCars().size())
+                .append("\n\n");
 
-            view.getRaceStatusLabel().setText("Race paused");
+        result.append("Finishing order:\n");
+
+        for (int i = 0; i < model.getFinishOrder().size(); i++) {
+            RaceCar car = model.getFinishOrder().get(i);
+
+            result.append(i + 1)
+                    .append(". Car #")
+                    .append(car.getNumber())
+                    .append(" - ")
+                    .append(car.getColorName())
+                    .append("\n");
         }
 
-        private void updateSpeed(double speed) {
+        view.getResultsArea().setText(result.toString());
+    }
 
-        view.getSpeedValueLabel().setText(
-                String.format("%.1fx", speed));
+    private void finishRace() {
+        raceFinished = true;
+
+        for (RotateTransition wheel : wheelAnimations) {
+            wheel.stop();
+        }
+
+        view.getStartButton().setDisable(true);
+        view.getPauseButton().setDisable(true);
+
+        RaceCar winner = model.getWinner();
+
+        StringBuilder result = new StringBuilder();
+
+        result.append("CONGRATULATIONS!\n\n");
+        result.append("WINNER: Car #")
+                .append(winner.getNumber())
+                .append("\n");
+
+        result.append("Type: ")
+                .append(winner.getType())
+                .append("\n");
+
+        result.append("Color: ")
+                .append(winner.getColorName())
+                .append("\n\n");
+
+        result.append("FINAL RACE RESULTS\n");
+
+        for (int i = 0; i < model.getFinishOrder().size(); i++) {
+            RaceCar car = model.getFinishOrder().get(i);
+
+            result.append(i + 1)
+                    .append(". Car #")
+                    .append(car.getNumber())
+                    .append(" - ")
+                    .append(car.getType())
+                    .append(" (")
+                    .append(car.getColorName())
+                    .append(")\n");
+        }
+
+        result.append("\nAll cars completed the race!");
+
+        view.getResultsArea().setText(result.toString());
+        view.getRaceStatusLabel().setText("Race completed!");
+    }
+
+    // SPEED CONTROL
+    private void updateSpeed(double speed) {
+        view.getSpeedValueLabel().setText(String.format("%.1fx", speed));
 
         for (TranslateTransition transition : transitions.values()) {
             transition.setRate(speed);
@@ -491,14 +582,15 @@ public class CarRaceController {
             wheel.setRate(speed);
         }
     }
-    
+
+    // CAR VISUAL CLASS
     private static class CarVisual {
         private Group group;
         private List<RotateTransition> animations;
+
         public CarVisual(Group group, List<RotateTransition> animations) {
             this.group = group;
             this.animations = animations;
+        }
     }
-        
-    }   
 }
