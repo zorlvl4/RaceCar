@@ -316,9 +316,182 @@ public class CarRaceController {
             carGroups.put(car, visual.group);
             wheelAnimations.addAll(visual.animations);
             track.getChildren().add(visual.group);
+            buildTrack();
         }
-    }    
+    }
         
+        // START RACE
+
+    private void startRace() {
+        if (!slideshowFinished || raceFinished) {
+            return;
+        }
+        if (!raceStarted) {
+            prepareTransitions();
+            raceStarted = true;
+        }
+
+        for (Map.Entry<RaceCar, TranslateTransition> entry
+                : transitions.entrySet()) {
+            RaceCar car = entry.getKey();
+            TranslateTransition transition =
+                    entry.getValue();
+            if (!model.getFinishOrder().contains(car)) {
+                if (racePaused) {
+                    transition.play();
+                } else {
+                    transition.playFromStart();
+                }
+            }
+        }
+
+        for (RotateTransition wheel : wheelAnimations) {
+            wheel.play();
+        }
+        racePaused = false;
+
+        view.getStartButton().setDisable(true);
+        view.getStartButton().setText("Start");
+        view.getPauseButton().setDisable(false);
+        view.getRaceStatusLabel().setText(
+                "Race in progress!");
+    }
+
+    private void prepareTransitions() {
+        double distance =
+                FINISH_LINE_X - START_CAR_X
+                - CAR_WIDTH + 2;
+        for (RaceCar car : model.getCars()) {
+            Group group = carGroups.get(car);
+            TranslateTransition transition =
+                    new TranslateTransition(
+                            Duration.seconds(
+                                    distance / car.getSpeed()),
+                            group);
+
+            transition.setToX(distance);
+
+            transition.setInterpolator(
+                    Interpolator.LINEAR);
+
+            transition.setRate(
+                    view.getSpeedSlider().getValue());
+
+            transition.setOnFinished(event ->
+                    carFinished(car));
+
+            transitions.put(car, transition);
+        }
+    }   
+    
+    private void carFinished(RaceCar car) {
+        model.recordFinish(car);
+        updateResults();
+        view.getRaceStatusLabel().setText(
+                "Car #" + car.getNumber()
+                + " finished in position "
+                + model.getFinishOrder().size());
+        if (model.getFinishOrder().size()
+                == model.getCars().size()) {
+            finishRace();
+    }
+        
+    private void updateResults() {
+
+    StringBuilder result = new StringBuilder();
+
+    result.append("RACE PROGRESS\n\n");
+
+    result.append("Cars finished: ")
+            .append(model.getFinishOrder().size())
+            .append(" / ")
+            .append(model.getCars().size())
+            .append("\n\n");
+
+    result.append("Finishing order:\n");
+
+    for (int i = 0; i < model.getFinishOrder().size(); i++) {
+
+        RaceCar car = model.getFinishOrder().get(i);
+
+        result.append(i + 1)
+                .append(". Car #")
+                .append(car.getNumber())
+                .append(" - ")
+                .append(car.getColorName())
+                .append("\n");
+    }
+
+    view.getResultsArea().setText(result.toString());
+    }
+
+    private void resetRace() {
+        for (TranslateTransition transition : transitions.values()) {
+            transition.stop();
+        }
+
+        for (RotateTransition wheel : wheelAnimations) {
+            wheel.stop();
+        }
+
+        model.resetRace();
+
+        raceStarted = false;
+        racePaused = false;
+        raceFinished = false;
+
+        buildTrack();
+
+        view.getStartButton().setDisable(false);
+        view.getStartButton().setText("Start");
+
+        view.getPauseButton().setDisable(true);
+        view.getResetButton().setDisable(false);
+
+        view.getRaceStatusLabel().setText("Ready to race");
+
+        view.getResultsArea().setText(
+                "The race has been reset.\n"
+                + "All cars are back at the starting line.");
+    }
+    
+    private void pauseRace() {
+            if (!raceStarted || raceFinished || racePaused) {
+                return;
+            }
+
+            racePaused = true;
+
+            for (TranslateTransition transition : transitions.values()) {
+                transition.pause();
+            }
+
+            for (RotateTransition wheel : wheelAnimations) {
+                wheel.pause();
+            }
+
+            view.getStartButton().setDisable(false);
+            view.getStartButton().setText("Resume");
+
+            view.getPauseButton().setDisable(true);
+
+            view.getRaceStatusLabel().setText("Race paused");
+        }
+
+        private void updateSpeed(double speed) {
+
+        view.getSpeedValueLabel().setText(
+                String.format("%.1fx", speed));
+
+        for (TranslateTransition transition : transitions.values()) {
+            transition.setRate(speed);
+        }
+
+        for (RotateTransition wheel : wheelAnimations) {
+            wheel.setRate(speed);
+        }
+    }
+    
     private static class CarVisual {
         private Group group;
         private List<RotateTransition> animations;
