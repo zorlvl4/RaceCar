@@ -5,7 +5,6 @@
 package com.mycompany.racecar.Model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import javafx.scene.paint.Color;
 
@@ -16,7 +15,7 @@ import javafx.scene.paint.Color;
 public class CarRaceModel {
     private final List<RaceCar> cars = new ArrayList<>();
     private final List<RaceCar> finishOrder = new ArrayList<>();
-    private RaceCar winner;
+    private RaceCar winner; 
     private final double finishLineX;
 
     public CarRaceModel(double finishLineX) {
@@ -59,5 +58,17 @@ public class CarRaceModel {
         for (RaceCar car : cars) {
             car.setPosition(0, 0);
         }
+    }
+    
+    public void recordFinish(RaceCar car) {
+
+    if (!finishOrder.contains(car)) {
+
+        finishOrder.add(car);
+
+        if (winner == null) {
+            winner = car;
+        }
+    }
     }
 }
