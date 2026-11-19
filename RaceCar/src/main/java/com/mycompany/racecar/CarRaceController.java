@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Locale;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.PauseTransition;
@@ -24,6 +24,9 @@ import javafx.animation.TranslateTransition;
 import javafx.scene.Group;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Polygon;
@@ -58,7 +61,7 @@ public class CarRaceController {
     private static final double START_CAR_X = 150;
     private static final double START_LINE_X = 265;
     private static final double FINISH_LINE_X = 900;
-    private static final double CAR_WIDTH = 115;
+    private static final double CAR_WIDTH = 120;
 
     public CarRaceController(CarRaceModel model, CarRaceView view) {
         this.model = model;
@@ -97,6 +100,7 @@ public class CarRaceController {
 
         view.getSlideCarHolder().getChildren().setAll(visual.group);
         view.getSlideGreetingLabel().setText("Welcome to the Grand Prix!");
+
         view.getSlideNameLabel().setText(
                 car.getType() + "  |  #" + car.getNumber() + "  |  " + car.getColorName());
 
@@ -127,14 +131,15 @@ public class CarRaceController {
 
         view.getRacePane().setManaged(true);
         view.getRacePane().setVisible(true);
+
         buildTrack();
 
         view.getResultsArea().setText(
-                "The slideshow is complete.\n"
-                + "All cars are ready at the starting line.\n\n"
-                + "Press START to begin the race.");
+                "WELCOME TO THE RACE!\n\n"
+                + "All four cars are ready.\n\n"
+                + "Press START to begin.");
 
-        view.getRaceStatusLabel().setText("Ready to race");
+        view.getRaceStatusLabel().setText("READY TO RACE");
         view.getStartButton().setDisable(false);
         view.getPauseButton().setDisable(true);
         view.getResetButton().setDisable(false);
@@ -145,12 +150,16 @@ public class CarRaceController {
         try {
             File soundFile = createSoundFile();
 
-            try (AudioInputStream stream = AudioSystem.getAudioInputStream(soundFile)) {
+            try (AudioInputStream stream =
+                    AudioSystem.getAudioInputStream(soundFile)) {
+
                 slideshowSound = AudioSystem.getClip();
                 slideshowSound.open(stream);
             }
 
-            slideshowSound.loop(5);
+            slideshowSound.setFramePosition(0);
+            slideshowSound.loop(Clip.LOOP_CONTINUOUSLY);
+
         } catch (Exception e) {
             System.out.println("Sound error: " + e.getMessage());
         }
@@ -162,18 +171,25 @@ public class CarRaceController {
         int sampleCount = sampleRate * duration;
 
         byte[] audioData = new byte[sampleCount * 2];
+        double phase = 0;
 
         for (int i = 0; i < sampleCount; i++) {
             double time = (double) i / sampleRate;
-            double frequency = 65 + 30 * time / duration;
 
-            double sound = Math.sin(2 * Math.PI * frequency * time)
-                    + 0.3 * Math.sin(4 * Math.PI * frequency * time);
+            double frequency =
+                    95 + 35 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 1.2 * time));
 
-            double envelope = Math.min(1, time * 5)
-                    * Math.min(1, (duration - time) * 5);
+            phase += 2 * Math.PI * frequency / sampleRate;
 
-            short sample = (short) (sound * envelope * 3000);
+            double sound = Math.sin(phase)
+                    + 0.35 * Math.sin(2 * phase)
+                    + 0.15 * Math.sin(3 * phase);
+
+            double fadeIn = Math.min(1, time * 10);
+            double fadeOut = Math.min(1, (duration - time) * 10);
+            double envelope = fadeIn * fadeOut;
+
+            short sample = (short) (sound * envelope * 6500);
 
             audioData[i * 2] = (byte) (sample & 0xff);
             audioData[i * 2 + 1] = (byte) ((sample >> 8) & 0xff);
@@ -204,62 +220,120 @@ public class CarRaceController {
     private CarVisual createCarVisual(RaceCar car) {
         Group carGroup = new Group();
 
+        // Wheels
+
         Group wheelOne = createWheel();
-        wheelOne.setLayoutX(28);
-        wheelOne.setLayoutY(43);
+        wheelOne.setLayoutX(30);
+        wheelOne.setLayoutY(42);
 
         Group wheelTwo = createWheel();
-        wheelTwo.setLayoutX(87);
-        wheelTwo.setLayoutY(43);
+        wheelTwo.setLayoutX(90);
+        wheelTwo.setLayoutY(42);
 
-        Polygon body = new Polygon(
-                3, 22,
-                18, 10,
-                79, 10,
-                96, 22,
-                115, 26,
-                115, 42,
-                3, 42
+        // Rear spoiler
+        Polygon spoiler = new Polygon(
+                3, 15,
+                22, 15,
+                19, 20,
+                5, 20
         );
 
-        body.setFill(car.getColor());
-        body.setStroke(Color.BLACK);
+        spoiler.setFill(Color.DARKSLATEGRAY);
+        spoiler.setStroke(Color.BLACK);
 
+        Rectangle spoilerSupport = new Rectangle(8, 18, 4, 7);
+        spoilerSupport.setFill(Color.BLACK);
+
+        // Main car body
+        Polygon body = new Polygon(
+                3, 30,
+                12, 23,
+                29, 20,
+                40, 8,
+                79, 8,
+                94, 20,
+                108, 23,
+                120, 30,
+                118, 40,
+                5, 40
+        );
+
+        body.setFill(new LinearGradient(
+                0, 0, 0, 1, true,
+                CycleMethod.NO_CYCLE,
+                new Stop(0, car.getColor().brighter()),
+                new Stop(1, car.getColor().darker())
+        ));
+
+        body.setStroke(Color.BLACK);
+        body.setStrokeWidth(1.5);
+
+        // Roof
         Polygon roof = new Polygon(
-                31, 10,
-                43, 0,
-                78, 0,
-                91, 10
+                37, 20,
+                47, 8,
+                76, 8,
+                90, 20
         );
 
         roof.setFill(car.getColor().darker());
         roof.setStroke(Color.BLACK);
 
-        Rectangle windowOne = new Rectangle(45, 2, 14, 8);
-        windowOne.setFill(Color.LIGHTBLUE);
-        windowOne.setStroke(Color.BLACK);
+        // Windows
+        Polygon frontWindow = new Polygon(
+                49, 10,
+                60, 10,
+                60, 18,
+                43, 18
+        );
 
-        Rectangle windowTwo = new Rectangle(62, 2, 14, 8);
-        windowTwo.setFill(Color.LIGHTBLUE);
-        windowTwo.setStroke(Color.BLACK);
+        frontWindow.setFill(Color.web("#8DD5F0"));
+        frontWindow.setStroke(Color.DARKSLATEGRAY);
 
-        Text number = new Text(48, 35, String.valueOf(car.getNumber()));
+        Rectangle rearWindow = new Rectangle(64, 10, 12, 8);
+        rearWindow.setFill(Color.web("#8DD5F0"));
+        rearWindow.setStroke(Color.DARKSLATEGRAY);
+
+        // Body details
+        Line sideStripe = new Line(13, 33, 109, 33);
+        sideStripe.setStroke(Color.WHITE);
+        sideStripe.setStrokeWidth(2);
+        sideStripe.setOpacity(0.75);
+
+        Line doorLine = new Line(82, 21, 82, 39);
+        doorLine.setStroke(Color.BLACK);
+        doorLine.setOpacity(0.5);
+
+        // Lights
+        Circle frontLight = new Circle(116, 29, 2.5, Color.YELLOW);
+        Circle rearLight = new Circle(7, 28, 2.5, Color.RED);
+
+        // Car number
+        Text number = new Text(52, 31, String.valueOf(car.getNumber()));
         number.setFill(Color.WHITE);
-        number.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        number.setFont(Font.font("Arial", FontWeight.BOLD, 10));
 
         carGroup.getChildren().addAll(
                 wheelOne, wheelTwo,
+                spoiler, spoilerSupport,
                 body, roof,
-                windowOne, windowTwo,
+                frontWindow, rearWindow,
+                sideStripe, doorLine,
+                frontLight, rearLight,
                 number
         );
 
-        RotateTransition spinOne = new RotateTransition(Duration.millis(420), wheelOne);
+        // Wheel animations
+        RotateTransition spinOne =
+                new RotateTransition(Duration.millis(420), wheelOne);
+
         spinOne.setByAngle(360);
         spinOne.setInterpolator(Interpolator.LINEAR);
         spinOne.setCycleCount(Animation.INDEFINITE);
 
-        RotateTransition spinTwo = new RotateTransition(Duration.millis(420), wheelTwo);
+        RotateTransition spinTwo =
+                new RotateTransition(Duration.millis(420), wheelTwo);
+
         spinTwo.setByAngle(360);
         spinTwo.setInterpolator(Interpolator.LINEAR);
         spinTwo.setCycleCount(Animation.INDEFINITE);
@@ -272,14 +346,30 @@ public class CarRaceController {
     }
 
     private Group createWheel() {
-        Circle outer = new Circle(0, 0, 11, Color.BLACK);
-        Circle center = new Circle(0, 0, 3.5, Color.LIGHTGRAY);
+        Circle tire = new Circle(0, 0, 10.5, Color.web("#111111"));
 
-        Line spoke = new Line(0, 0, 0, -8);
-        spoke.setStroke(Color.WHITE);
-        spoke.setStrokeWidth(2);
+        Circle rim = new Circle(0, 0, 6, Color.SILVER);
+        rim.setStroke(Color.WHITE);
+        rim.setStrokeWidth(0.7);
 
-        return new Group(outer, spoke, center);
+        Circle center = new Circle(0, 0, 2.3, Color.DARKSLATEGRAY);
+
+        Line spokeOne = new Line(-4, 0, 4, 0);
+        Line spokeTwo = new Line(0, -4, 0, 4);
+        Line spokeThree = new Line(-3, -3, 3, 3);
+        Line spokeFour = new Line(-3, 3, 3, -3);
+
+        spokeOne.setStroke(Color.DARKSLATEGRAY);
+        spokeTwo.setStroke(Color.DARKSLATEGRAY);
+        spokeThree.setStroke(Color.DARKSLATEGRAY);
+        spokeFour.setStroke(Color.DARKSLATEGRAY);
+
+        return new Group(
+                tire, rim,
+                spokeOne, spokeTwo,
+                spokeThree, spokeFour,
+                center
+        );
     }
 
     // BUILD RACE TRACK
@@ -292,7 +382,14 @@ public class CarRaceController {
         wheelAnimations.clear();
 
         Rectangle background = new Rectangle(TRACK_WIDTH, TRACK_HEIGHT);
-        background.setFill(Color.web("#29313B"));
+
+        background.setFill(new LinearGradient(
+                0, 0, 0, 1, true,
+                CycleMethod.NO_CYCLE,
+                new Stop(0, Color.web("#303B49")),
+                new Stop(1, Color.web("#171F2B"))
+        ));
+
         track.getChildren().add(background);
 
         // Track borders
@@ -306,60 +403,48 @@ public class CarRaceController {
 
         track.getChildren().addAll(topLine, bottomLine);
 
-        // Lane divisions
-        for (int i = 1; i <= 3; i++) {
-            Line lane = new Line(20, 112 + (i - 1) * 85,
-                    980, 112 + (i - 1) * 85);
+        // Finish line
+        Line finishLine = new Line(FINISH_LINE_X, 30, FINISH_LINE_X, 350);
 
-            lane.setStroke(Color.WHITE);
-            lane.setStrokeWidth(2);
-            lane.getStrokeDashArray().addAll(15.0, 15.0);
+        finishLine.setStroke(Color.WHITE);
+        finishLine.setStrokeWidth(4);
 
-            track.getChildren().add(lane);
-        }
+        track.getChildren().add(finishLine);
 
         // Starting line
         Line startLine = new Line(START_LINE_X, 30, START_LINE_X, 350);
-        startLine.setStroke(Color.YELLOW);
+        startLine.setStroke(Color.web("#FACC15"));
         startLine.setStrokeWidth(4);
 
         track.getChildren().add(startLine);
 
-        // Finish line
-        for (int row = 0; row < 32; row++) {
-            for (int column = 0; column < 2; column++) {
-                Rectangle square = new Rectangle(
-                        FINISH_LINE_X + column * 8,
-                        30 + row * 10, 8, 10);
-
-                if ((row + column) % 2 == 0) {
-                    square.setFill(Color.WHITE);
-                } else {
-                    square.setFill(Color.BLACK);
-                }
-
-                track.getChildren().add(square);
-            }
-        }
-
-        // Labels
+        // Track labels
         Text startText = new Text(START_LINE_X - 25, 20, "START");
-        startText.setFill(Color.YELLOW);
+        startText.setFill(Color.web("#FACC15"));
+        startText.setFont(Font.font("Arial", FontWeight.BOLD, 13));
 
         Text finishText = new Text(FINISH_LINE_X - 25, 20, "FINISH");
         finishText.setFill(Color.WHITE);
-
-        startText.setFont(Font.font("Arial", FontWeight.BOLD, 13));
         finishText.setFont(Font.font("Arial", FontWeight.BOLD, 13));
 
         track.getChildren().addAll(startText, finishText);
 
+        // Lane numbers
+        for (int i = 0; i < model.getCars().size(); i++) {
+            Text laneNumber = new Text(45, 68 + i * 85, "0" + (i + 1));
+            laneNumber.setFill(Color.web("#AAB4C0"));
+            laneNumber.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+            track.getChildren().add(laneNumber);
+        }
+
         // Add cars
+
         for (int i = 0; i < model.getCars().size(); i++) {
             RaceCar car = model.getCars().get(i);
             double laneY = 35 + i * 85;
 
             car.setPosition(START_CAR_X, laneY);
+
             CarVisual visual = createCarVisual(car);
 
             visual.group.setLayoutX(START_CAR_X);
@@ -375,6 +460,7 @@ public class CarRaceController {
             wheelAnimations.addAll(visual.animations);
             track.getChildren().add(visual.group);
         }
+        updateSpeed(view.getSpeedSlider().getValue());
     }
 
     // START RACE
@@ -410,7 +496,7 @@ public class CarRaceController {
         view.getStartButton().setDisable(true);
         view.getStartButton().setText("Start");
         view.getPauseButton().setDisable(false);
-        view.getRaceStatusLabel().setText("Race in progress!");
+        view.getRaceStatusLabel().setText("RACE IN PROGRESS");
     }
 
     private void prepareTransitions() {
@@ -419,8 +505,13 @@ public class CarRaceController {
         for (RaceCar car : model.getCars()) {
             Group group = carGroups.get(car);
 
+            double performance = ThreadLocalRandom.current()
+                    .nextDouble(0.75, 1.25);
+
+            double adjustedSpeed = car.getSpeed() * performance;
+
             TranslateTransition transition = new TranslateTransition(
-                    Duration.seconds(distance / car.getSpeed()), group);
+                    Duration.seconds(distance / adjustedSpeed), group);
 
             transition.setToX(distance);
             transition.setInterpolator(Interpolator.LINEAR);
@@ -450,7 +541,7 @@ public class CarRaceController {
         view.getStartButton().setDisable(false);
         view.getStartButton().setText("Resume");
         view.getPauseButton().setDisable(true);
-        view.getRaceStatusLabel().setText("Race paused");
+        view.getRaceStatusLabel().setText("RACE PAUSED");
     }
 
     // RESET RACE
@@ -475,7 +566,7 @@ public class CarRaceController {
         view.getStartButton().setText("Start");
         view.getPauseButton().setDisable(true);
         view.getResetButton().setDisable(false);
-        view.getRaceStatusLabel().setText("Ready to race");
+        view.getRaceStatusLabel().setText("READY TO RACE");
 
         view.getResultsArea().setText(
                 "The race has been reset.\n"
@@ -567,12 +658,13 @@ public class CarRaceController {
         result.append("\nAll cars completed the race!");
 
         view.getResultsArea().setText(result.toString());
-        view.getRaceStatusLabel().setText("Race completed!");
+        view.getRaceStatusLabel().setText("RACE COMPLETED!");
     }
 
     // SPEED CONTROL
     private void updateSpeed(double speed) {
-        view.getSpeedValueLabel().setText(String.format("%.1fx", speed));
+        view.getSpeedValueLabel().setText(
+                String.format(Locale.US, "%.1fx", speed));
 
         for (TranslateTransition transition : transitions.values()) {
             transition.setRate(speed);
