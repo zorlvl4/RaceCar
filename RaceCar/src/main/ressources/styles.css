@@ -1,0 +1,155 @@
+.root-pane {
+    -fx-font-family: "Arial";
+    -fx-background-color: #101820;
+}
+
+/* HEADER */
+.header {
+    -fx-background-color: #172633;
+}
+
+.main-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.sub-title {
+    -fx-font-size: 14px;
+    -fx-text-fill: #aab9c7;
+}
+
+/* SLIDESHOW */
+
+.slideshow-panel {
+    -fx-background-color: #1b2b38;
+    -fx-background-radius: 15px;
+}
+
+.slide-greeting {
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.car-display {
+    -fx-background-color: #263c4c;
+    -fx-background-radius: 15px;
+}
+
+.slide-name {
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.slide-counter {
+    -fx-font-size: 13px;
+    -fx-text-fill: #aab9c7;
+}
+
+/* RACE */
+
+.race-panel {
+    -fx-background-color: #101820;
+}
+
+.section-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.status-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #4fc3f7;
+}
+
+.track-pane {
+    -fx-background-color: #29313b;
+    -fx-background-radius: 15px;
+    -fx-border-color: #455563;
+    -fx-border-radius: 15px;
+    -fx-border-width: 2px;
+}
+
+/* FOOTER */
+.footer {
+    -fx-background-color: #172633;
+}
+
+.control-card {
+    -fx-background-color: #263c4c;
+    -fx-background-radius: 12px;
+    -fx-padding: 15px;
+}
+
+.results-card {
+    -fx-background-color: #263c4c;
+    -fx-background-radius: 12px;
+    -fx-padding: 15px;
+}
+
+.normal-label {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+/* BUTTONS */
+.button {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 9px 18px;
+    -fx-background-radius: 7px;
+    -fx-cursor: hand;
+}
+
+.primary-button {
+    -fx-background-color: #19a974;
+    -fx-text-fill: white;
+}
+
+.primary-button:hover {
+    -fx-background-color: #14865d;
+}
+
+.secondary-button {
+    -fx-background-color: #2980b9;
+    -fx-text-fill: white;
+}
+
+.secondary-button:hover {
+    -fx-background-color: #216694;
+}
+
+.danger-button {
+    -fx-background-color: #d94b4b;
+    -fx-text-fill: white;
+}
+
+.danger-button:hover {
+    -fx-background-color: #b63838;
+}
+
+/* RESULTS */
+
+.text-area {
+    -fx-control-inner-background: #172633;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-border-color: #455563;
+    -fx-border-radius: 5px;
+}
+
+.text-area .content {
+    -fx-background-color: #172633;
+}
+
+/* SLIDER */
+.slider .track {
+    -fx-background-color: #455563;
+}
+
+.slider .thumb {
+    -fx-background-color: #19a974;
+}
